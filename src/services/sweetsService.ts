@@ -1,3 +1,4 @@
+
 import prisma from "../prisma";
 
 export async function createSweet(input: { name: string; category: string; price: number; quantity: number }) {
