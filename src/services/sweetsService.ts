@@ -10,17 +10,44 @@ export async function listSweets() {
 }
 
 export async function searchSweets(opts: { name?: string; category?: string; minPrice?: number; maxPrice?: number }) {
-  // Fetch all sweets then filter in-memory to avoid connector-specific query options.
   const all = await prisma.sweet.findMany();
-
   return all.filter((s) => {
-    // name filter (case-insensitive substring)
     if (opts.name && !s.name.toLowerCase().includes(opts.name.toLowerCase())) return false;
-    // category exact match (case-insensitive)
     if (opts.category && s.category.toLowerCase() !== opts.category.toLowerCase()) return false;
-    // price range
     if (opts.minPrice != null && s.price < opts.minPrice) return false;
     if (opts.maxPrice != null && s.price > opts.maxPrice) return false;
     return true;
+  });
+}
+
+export async function purchaseSweet(id: number) {
+  
+  return prisma.$transaction(async (tx) => {
+    const sweet = await tx.sweet.findUnique({ where: { id } });
+    if (!sweet) {
+      const e: any = new Error("Sweet not found");
+      e.status = 404;
+      throw e;
+    }
+    if (sweet.quantity <= 0) {
+      const e: any = new Error("Out of stock");
+      e.status = 400;
+      throw e;
+    }
+    const updated = await tx.sweet.update({ where: { id }, data: { quantity: sweet.quantity - 1 } });
+    return updated;
+  });
+}
+
+export async function restockSweet(id: number, amount: number) {
+  return prisma.$transaction(async (tx) => {
+    const sweet = await tx.sweet.findUnique({ where: { id } });
+    if (!sweet) {
+      const e: any = new Error("Sweet not found");
+      e.status = 404;
+      throw e;
+    }
+    const updated = await tx.sweet.update({ where: { id }, data: { quantity: sweet.quantity + amount } });
+    return updated;
   });
 }

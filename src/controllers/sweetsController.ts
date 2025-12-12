@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import * as service from "../services/sweetsService";
+import { AuthRequest } from "../middleware/authMiddleware";
 
 export async function createSweet(req: Request, res: Response) {
   const { name, category, price, quantity } = req.body;
@@ -29,4 +30,32 @@ export async function searchSweets(req: Request, res: Response) {
     maxPrice: maxPrice ? Number(maxPrice) : undefined,
   });
   return res.json(results);
+}
+
+export async function purchaseSweet(req: AuthRequest, res: Response) {
+  const id = Number(req.params.id);
+  if (Number.isNaN(id)) return res.status(400).json({ error: "invalid id" });
+
+  try {
+    const updated = await service.purchaseSweet(id);
+    return res.json(updated);
+  } catch (err: any) {
+    return res.status(err.status || 400).json({ error: err.message || "purchase failed" });
+  }
+}
+
+export async function restockSweet(req: AuthRequest, res: Response) {
+  const id = Number(req.params.id);
+  const amount = Number(req.body.amount);
+  if (Number.isNaN(id) || Number.isNaN(amount) || amount <= 0) return res.status(400).json({ error: "invalid id or amount" });
+
+  
+  if (!req.user || req.user.role !== "ADMIN") return res.status(403).json({ error: "forbidden" });
+
+  try {
+    const updated = await service.restockSweet(id, amount);
+    return res.json(updated);
+  } catch (err: any) {
+    return res.status(err.status || 400).json({ error: err.message || "restock failed" });
+  }
 }
