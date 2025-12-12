@@ -1,17 +1,10 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "sqlite"
-}
-
-
-enum Role {
-  USER
-  ADMIN
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -19,7 +12,7 @@ model User {
   name         String
   email        String   @unique
   passwordHash String
-  role         Role     @default(USER)
+  role         String   @default("USER")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
